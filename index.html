@@ -336,6 +336,44 @@
 
   <div class="seccionAdmin">
     <h2>📦 Inventario</h2>
+    <div style="margin:15px 0; padding:15px; background:#eef3f7; border-radius:12px;">
+
+  <h3>➕ Agregar inventario</h3>
+
+  <select id="productoInventario" style="width:100%; padding:12px; margin:6px 0; border-radius:8px;">
+    <option value="">Seleccionar producto</option>
+  </select>
+
+  <input
+    type="number"
+    id="cantidadInventario"
+    placeholder="Cantidad que ingresa"
+    min="1"
+    style="width:100%; padding:12px; margin:6px 0; border-radius:8px;"
+  >
+
+  <input
+    type="number"
+    id="costoInventario"
+    placeholder="Costo unitario"
+    min="0"
+    style="width:100%; padding:12px; margin:6px 0; border-radius:8px;"
+  >
+
+  <input
+    type="text"
+    id="notaInventario"
+    placeholder="Nota (opcional)"
+    style="width:100%; padding:12px; margin:6px 0; border-radius:8px;"
+  >
+
+  <button onclick="agregarInventario()">
+    AGREGAR INVENTARIO
+  </button>
+
+  <div id="mensajeInventario" style="margin-top:10px;"></div>
+
+</div>
 
     <table>
       <thead>
@@ -429,6 +467,7 @@ async function cargarPanelAdministrador() {
 
   cargarProductosAdmin();
   cargarOficialesAdmin();
+  cargarProductosInventario();
   cargarConsumosAdmin();
 }
 
@@ -518,7 +557,80 @@ async function cargarOficialesAdmin() {
 }
 
 
-async function cargarConsumosAdmin() {
+async function cargarProductosInventario() {
+  const { data, error } = await supabaseClient
+    .from("products")
+    .select("id,name,price,stock,active")
+    .order("name");
+
+  const select = document.getElementById("productoInventario");
+  if (!select) return;
+
+  if (error) {
+    select.innerHTML = '<option value="">Error cargando productos</option>';
+    return;
+  }
+
+  select.innerHTML = '<option value="">Seleccionar producto</option>';
+
+  data.forEach(producto => {
+    const option = document.createElement("option");
+    option.value = producto.id;
+    option.textContent =
+      `${producto.name} — $${Number(producto.price).toLocaleString("es-CO")} — Stock: ${producto.stock}`;
+    select.appendChild(option);
+  });
+}
+ async function agregarInventario() {
+  const productId = document.getElementById("productoInventario").value;
+  const quantity = Number(document.getElementById("cantidadInventario").value);
+  const unitCost = Number(document.getElementById("costoInventario").value || 0);
+  const notes = document.getElementById("notaInventario").value.trim();
+  const message = document.getElementById("mensajeInventario");
+
+  message.textContent = "";
+
+  if (!productId || !Number.isInteger(quantity) || quantity <= 0) {
+    message.style.color = "#b42318";
+    message.textContent = "Seleccione un producto y una cantidad válida.";
+    return;
+  }
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  if (!user) {
+    message.style.color = "#b42318";
+    message.textContent = "Sesión no válida.";
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("inventory_entries")
+    .insert({
+      product_id: productId,
+      quantity: quantity,
+      unit_cost: unitCost,
+      notes: notes || null,
+      created_by: user.id
+    });
+
+  if (error) {
+    message.style.color = "#b42318";
+    message.textContent = "No se pudo agregar el inventario: " + error.message;
+    return;
+  }
+
+  message.style.color = "#087f23";
+  message.textContent = "Inventario agregado correctamente.";
+
+  document.getElementById("cantidadInventario").value = "";
+  document.getElementById("costoInventario").value = "";
+  document.getElementById("notaInventario").value = "";
+
+  await cargarProductosInventario();
+  await cargarProductosAdmin();
+}
+  async function cargarConsumosAdmin() {
 
   const { data: consumos, error } =
     await supabaseClient

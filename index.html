@@ -5,66 +5,209 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cámara de Oficiales</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f7fa;
-      color: #14213d;
-    }
-
-    header {
-      background: #0b1f3a;
+      min-height: 100vh;
+      background: #071a2b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: white;
-      padding: 25px;
-      text-align: center;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 28px;
     }
 
     .contenedor {
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
-    }
-
-    .tarjeta {
+      width: 92%;
+      max-width: 430px;
       background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 4px 15px rgba(0,0,0,.1);
+      color: #17212b;
+      border-radius: 20px;
+      padding: 30px 25px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
       text-align: center;
     }
 
-    button {
-      background: #0b1f3a;
-      color: white;
-      border: none;
-      padding: 14px 25px;
-      border-radius: 8px;
+    .escudo {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 5px 0;
+      color: #0b2942;
+      font-size: 25px;
+    }
+
+    .subtitulo {
+      color: #777;
+      margin-bottom: 25px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
       font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #0b2942;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
+    }
+
+    button:hover {
+      background: #123e60;
+    }
+
+    #mensaje {
+      margin-top: 15px;
+      color: #b00020;
+      min-height: 20px;
+    }
+
+    .pie {
+      margin-top: 25px;
+      font-size: 12px;
+      color: #888;
     }
   </style>
 </head>
 
 <body>
 
-  <header>
-    <h1>Cámara de Oficiales</h1>
-    <p>Sistema de Cantina</p>
-  </header>
-
   <div class="contenedor">
-    <div class="tarjeta">
-      <h2>Sistema en construcción</h2>
-      <p>El sistema de consumo e inventario estará disponible próximamente.</p>
-      <button>Ingresar</button>
+
+    <div style="font-size:70px;">⚓</div>
+
+    <h1>Cámara de Oficiales</h1>
+    <div class="subtitulo">Sistema de Cantina</div>
+
+    <input
+      type="email"
+      id="email"
+      placeholder="Correo electrónico"
+      autocomplete="email"
+    >
+
+    <input
+      type="password"
+      id="password"
+      placeholder="Contraseña"
+      autocomplete="current-password"
+    >
+
+    <button onclick="iniciarSesion()">
+      INGRESAR
+    </button>
+
+    <div id="mensaje"></div>
+
+    <div class="pie">
+      Sistema de consumo e inventario
     </div>
+
   </div>
+
+<script>
+
+  // ==========================================
+  // DATOS DE SUPABASE
+  // ==========================================
+
+  const SUPABASE_URL = "https://aczhpcwzdpyodmeaqqyw.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_KdRpwNxiSZHwXuOQRXKeZw_rFehbr-p";
+
+  const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+
+  // ==========================================
+  // INICIAR SESIÓN
+  // ==========================================
+
+  async function iniciarSesion() {
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const mensaje = document.getElementById("mensaje");
+
+    mensaje.textContent = "";
+
+    if (!email || !password) {
+      mensaje.textContent = "Ingrese correo y contraseña.";
+      return;
+    }
+
+    mensaje.style.color = "#555";
+    mensaje.textContent = "Verificando...";
+
+    const { data, error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+      mensaje.style.color = "#b00020";
+      mensaje.textContent = "Correo o contraseña incorrectos.";
+      return;
+    }
+
+    const { data: officer, error: officerError } =
+      await supabaseClient
+        .from("officers")
+        .select("*")
+        .eq("auth_user_id", data.user.id)
+        .single();
+
+    if (officerError) {
+      mensaje.style.color = "#b00020";
+      mensaje.textContent =
+        "Usuario autenticado, pero no está registrado como oficial.";
+      return;
+    }
+
+    localStorage.setItem(
+      "camara_oficial",
+      JSON.stringify(officer)
+    );
+
+    mensaje.style.color = "#087f23";
+    mensaje.textContent = "Ingreso exitoso.";
+
+    setTimeout(() => {
+
+      if (officer.is_admin) {
+        alert("Bienvenido administrador.");
+      } else {
+        alert("Bienvenido " + officer.full_name);
+      }
+
+    }, 500);
+  }
+
+</script>
 
 </body>
 </html>

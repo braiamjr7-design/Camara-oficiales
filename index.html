@@ -378,6 +378,7 @@
     <table>
       <thead>
         <tr>
+          <th>Imagen</th>
           <th>Producto</th>
           <th>Precio</th>
           <th>Stock</th>
@@ -387,7 +388,7 @@
 
       <tbody id="tablaProductos">
         <tr>
-          <td colspan="4">Cargando...</td>
+          <td colspan="5">Cargando...</td>
         </tr>
       </tbody>
     </table>
@@ -477,7 +478,7 @@ async function cargarProductosAdmin() {
   const { data, error } =
     await supabaseClient
       .from("products")
-      .select("id,name,price,stock,active")
+      .select("id,name,price,stock,active,image_url")
       .order("name");
 
   if (error) {
@@ -506,15 +507,22 @@ async function cargarProductosAdmin() {
       producto.active && producto.stock > 0;
 
     tabla.innerHTML += `
-      <tr>
-        <td>${producto.name}</td>
-        <td>$${Number(producto.price).toLocaleString("es-CO")}</td>
-        <td>${producto.stock}</td>
-        <td class="${disponible ? "disponible" : "agotado"}">
-          ${disponible ? "DISPONIBLE" : "AGOTADO"}
-        </td>
-      </tr>
-    `;
+  <tr>
+    <td>
+      ${
+        producto.image_url
+          ? `<img src="${producto.image_url}" alt="${producto.name}" style="width:60px;height:60px;object-fit:contain;border-radius:8px;">`
+          : "Sin imagen"
+      }
+    </td>
+    <td>${producto.name}</td>
+    <td>$${Number(producto.price).toLocaleString("es-CO")}</td>
+    <td>${producto.stock}</td>
+    <td class="${disponible ? "disponible" : "agotado"}">
+      ${disponible ? "DISPONIBLE" : "AGOTADO"}
+    </td>
+  </tr>
+`;
   });
 }
 

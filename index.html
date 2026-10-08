@@ -503,26 +503,49 @@ async function cargarProductosAdmin() {
 
   data.forEach(producto => {
 
-    const disponible =
-      producto.active && producto.stock > 0;
+  let imagenUrl = null;
 
-    tabla.innerHTML += `
-  <tr>
-    <td>
-      ${
-        producto.image_url
-          ? `<img src="${producto.image_url}" alt="${producto.name}" style="width:60px;height:60px;object-fit:contain;border-radius:8px;">`
-          : "Sin imagen"
-      }
-    </td>
-    <td>${producto.name}</td>
-    <td>$${Number(producto.price).toLocaleString("es-CO")}</td>
-    <td>${producto.stock}</td>
-    <td class="${disponible ? "disponible" : "agotado"}">
-      ${disponible ? "DISPONIBLE" : "AGOTADO"}
-    </td>
-  </tr>
-`;
+  if (producto.image_url) {
+
+    let imagenPath = producto.image_url;
+
+    if (imagenPath.includes("/product-images/")) {
+      imagenPath = imagenPath.split("/product-images/")[1];
+    }
+
+    imagenUrl = supabaseClient
+      .storage
+      .from("product-images")
+      .getPublicUrl(imagenPath)
+      .data
+      .publicUrl;
+  }
+
+  const disponible =
+    producto.active && producto.stock > 0;
+
+  tabla.innerHTML += `
+    <tr>
+      <td>
+        ${
+          imagenUrl
+            ? `<img src="${imagenUrl}" alt="${producto.name}" style="width:60px;height:60px;object-fit:contain;border-radius:8px;">`
+            : "Sin imagen"
+        }
+      </td>
+
+      <td>${producto.name}</td>
+
+      <td>$${Number(producto.price).toLocaleString("es-CO")}</td>
+
+      <td>${producto.stock}</td>
+
+      <td class="${disponible ? "disponible" : "agotado"}">
+        ${disponible ? "DISPONIBLE" : "AGOTADO"}
+      </td>
+    </tr>
+  `;
+});
   });
 }
 

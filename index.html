@@ -208,6 +208,384 @@
   }
 
 </script>
+<style>
+  #panelAdmin {
+    display: none;
+    width: 94%;
+    max-width: 1100px;
+    margin: 25px auto;
+    background: #f5f7fa;
+    color: #17212b;
+    border-radius: 18px;
+    padding: 25px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.25);
+  }
 
+  #panelAdmin h2 {
+    color: #0b2942;
+    margin-top: 0;
+  }
+
+  .encabezadoAdmin {
+    background: #0b2942;
+    color: white;
+    padding: 20px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+  }
+
+  .tarjetas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+
+  .tarjeta {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.08);
+  }
+
+  .tarjeta strong {
+    display: block;
+    font-size: 25px;
+    color: #0b2942;
+    margin-top: 6px;
+  }
+
+  .seccionAdmin {
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    margin-top: 20px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+  }
+
+  th {
+    background: #0b2942;
+    color: white;
+    padding: 11px;
+    text-align: left;
+  }
+
+  td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .disponible {
+    color: #087f23;
+    font-weight: bold;
+  }
+
+  .agotado {
+    color: #b00020;
+    font-weight: bold;
+  }
+
+  .btnSalir {
+    background: #9b1c1c;
+    width: auto;
+    padding: 10px 18px;
+    margin-top: 10px;
+  }
+</style>
+
+<div id="panelAdmin">
+
+  <div class="encabezadoAdmin">
+    <h2>⚓ Panel de Administración</h2>
+    <div>Cámara de Oficiales — Sistema de Cantina</div>
+    <button class="btnSalir" onclick="cerrarSesion()">
+      CERRAR SESIÓN
+    </button>
+  </div>
+
+  <div class="tarjetas">
+
+    <div class="tarjeta">
+      Oficiales registrados
+      <strong id="totalOficiales">0</strong>
+    </div>
+
+    <div class="tarjeta">
+      Productos
+      <strong id="totalProductos">0</strong>
+    </div>
+
+    <div class="tarjeta">
+      Productos disponibles
+      <strong id="productosDisponibles">0</strong>
+    </div>
+
+    <div class="tarjeta">
+      Consumos registrados
+      <strong id="totalConsumos">0</strong>
+    </div>
+
+  </div>
+
+  <div class="seccionAdmin">
+    <h2>📦 Inventario</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+
+      <tbody id="tablaProductos">
+        <tr>
+          <td colspan="4">Cargando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="seccionAdmin">
+    <h2>👮 Oficiales</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Orden</th>
+          <th>Grado</th>
+          <th>Nombre</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+
+      <tbody id="tablaOficiales">
+        <tr>
+          <td colspan="4">Cargando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="seccionAdmin">
+    <h2>🧾 Consumos recientes</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Oficial</th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Total</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+
+      <tbody id="tablaConsumos">
+        <tr>
+          <td colspan="5">Cargando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+
+async function cargarPanelAdministrador() {
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  if (!sessionData.session) return;
+
+  const usuario = sessionData.session.user;
+
+  const { data: oficial, error: errorOficial } =
+    await supabaseClient
+      .from("officers")
+      .select("*")
+      .eq("auth_user_id", usuario.id)
+      .single();
+
+  if (errorOficial || !oficial || !oficial.is_admin) {
+    return;
+  }
+
+  document.querySelector(".contenedor").style.display = "none";
+
+  const panel = document.getElementById("panelAdmin");
+  panel.style.display = "block";
+
+  cargarProductosAdmin();
+  cargarOficialesAdmin();
+  cargarConsumosAdmin();
+}
+
+
+async function cargarProductosAdmin() {
+
+  const { data, error } =
+    await supabaseClient
+      .from("products")
+      .select("id,name,price,stock,active")
+      .order("name");
+
+  if (error) {
+    document.getElementById("tablaProductos").innerHTML =
+      "<tr><td colspan='4'>Error cargando productos</td></tr>";
+    return;
+  }
+
+  document.getElementById("totalProductos").textContent =
+    data.length;
+
+  const disponibles =
+    data.filter(p => p.active && p.stock > 0).length;
+
+  document.getElementById("productosDisponibles").textContent =
+    disponibles;
+
+  const tabla =
+    document.getElementById("tablaProductos");
+
+  tabla.innerHTML = "";
+
+  data.forEach(producto => {
+
+    const disponible =
+      producto.active && producto.stock > 0;
+
+    tabla.innerHTML += `
+      <tr>
+        <td>${producto.name}</td>
+        <td>$${Number(producto.price).toLocaleString("es-CO")}</td>
+        <td>${producto.stock}</td>
+        <td class="${disponible ? "disponible" : "agotado"}">
+          ${disponible ? "DISPONIBLE" : "AGOTADO"}
+        </td>
+      </tr>
+    `;
+  });
+}
+
+
+async function cargarOficialesAdmin() {
+
+  const { data, error } =
+    await supabaseClient
+      .from("officers")
+      .select("rank,full_name,is_active,seniority_order")
+      .order("seniority_order");
+
+  if (error) {
+    document.getElementById("tablaOficiales").innerHTML =
+      "<tr><td colspan='4'>Error cargando oficiales</td></tr>";
+    return;
+  }
+
+  document.getElementById("totalOficiales").textContent =
+    data.length;
+
+  const tabla =
+    document.getElementById("tablaOficiales");
+
+  tabla.innerHTML = "";
+
+  data.forEach(oficial => {
+
+    tabla.innerHTML += `
+      <tr>
+        <td>${oficial.seniority_order ?? ""}</td>
+        <td>${oficial.rank ?? ""}</td>
+        <td>${oficial.full_name}</td>
+        <td class="${oficial.is_active ? "disponible" : "agotado"}">
+          ${oficial.is_active ? "ACTIVO" : "INACTIVO"}
+        </td>
+      </tr>
+    `;
+  });
+}
+
+
+async function cargarConsumosAdmin() {
+
+  const { data: consumos, error } =
+    await supabaseClient
+      .from("consumptions")
+      .select("*")
+      .order("consumed_at", { ascending: false })
+      .limit(20);
+
+  if (error) {
+    document.getElementById("tablaConsumos").innerHTML =
+      "<tr><td colspan='5'>Error cargando consumos</td></tr>";
+    return;
+  }
+
+  document.getElementById("totalConsumos").textContent =
+    consumos.length;
+
+  const { data: oficiales } =
+    await supabaseClient
+      .from("officers")
+      .select("id,full_name");
+
+  const { data: productos } =
+    await supabaseClient
+      .from("products")
+      .select("id,name");
+
+  const tabla =
+    document.getElementById("tablaConsumos");
+
+  tabla.innerHTML = "";
+
+  consumos.forEach(consumo => {
+
+    const oficial =
+      oficiales?.find(o => o.id === consumo.officer_id);
+
+    const producto =
+      productos?.find(p => p.id === consumo.product_id);
+
+    const fecha =
+      new Date(consumo.consumed_at)
+        .toLocaleString("es-CO");
+
+    tabla.innerHTML += `
+      <tr>
+        <td>${oficial?.full_name ?? "—"}</td>
+        <td>${producto?.name ?? "—"}</td>
+        <td>${consumo.quantity}</td>
+        <td>$${Number(consumo.total).toLocaleString("es-CO")}</td>
+        <td>${fecha}</td>
+      </tr>
+    `;
+  });
+}
+
+
+async function cerrarSesion() {
+
+  await supabaseClient.auth.signOut();
+
+  location.reload();
+}
+
+
+// Revisar si ya existe una sesión activa
+cargarPanelAdministrador();
+
+</script>
 </body>
 </html>

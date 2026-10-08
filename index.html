@@ -611,7 +611,11 @@ async function cargarProductosInventario() {
       quantity: quantity,
       unit_cost: unitCost,
       notes: notes || null,
-      created_by: user.id
+      created_by: (await supabaseClient
+  .from("officers")
+  .select("id")
+  .eq("auth_user_id", user.id)
+  .single()).data.id
     });
 
   if (error) {

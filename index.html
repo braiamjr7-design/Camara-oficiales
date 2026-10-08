@@ -164,6 +164,88 @@
   document.getElementById("panelVisitante").style.display = "block";
   cargarProductosVisitante();
 }
+async function cargarProductosVisitante() {
+  const contenedor = document.getElementById("listaProductosVisitante");
+
+  const { data, error } = await supabaseClient
+    .from("products")
+    .select("id,name,price,stock,active,image_url")
+    .eq("active", true)
+    .order("name");
+
+  if (error) {
+    contenedor.innerHTML = "Error cargando productos.";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    contenedor.innerHTML = "No hay productos disponibles.";
+    return;
+  }
+
+  window.productosVisitante = data;
+
+  contenedor.innerHTML = "";
+
+  data.forEach(producto => {
+    let imagenUrl = "";
+
+    if (producto.image_url) {
+      let imagenPath = producto.image_url;
+
+      if (imagenPath.includes("/product-images/")) {
+        imagenPath = imagenPath.split("/product-images/")[1];
+      }
+
+      imagenUrl = supabaseClient
+        .storage
+        .from("product-images")
+        .getPublicUrl(imagenPath)
+        .data
+        .publicUrl;
+    }
+
+    contenedor.innerHTML += `
+      <div style="
+        display:flex;
+        align-items:center;
+        gap:12px;
+        padding:12px;
+        margin:8px 0;
+        background:#f5f7fa;
+        border-radius:12px;
+      ">
+
+        ${
+          imagenUrl
+            ? `<img src="${imagenUrl}" style="width:65px;height:65px;object-fit:contain;border-radius:8px;">`
+            : ""
+        }
+
+        <div style="flex:1;">
+          <strong>${producto.name}</strong>
+          <div>
+            $${Number(producto.price).toLocaleString("es-CO")}
+          </div>
+          <div style="font-size:13px;color:#777;">
+            Stock: ${producto.stock}
+          </div>
+        </div>
+
+        <input
+          type="number"
+          min="0"
+          max="${producto.stock}"
+          value="0"
+          style="width:70px;margin:0;text-align:center;"
+          onchange="calcularTotalVisitante()"
+          data-producto-id="${producto.id}"
+        >
+
+      </div>
+    `;
+  });
+}
 async function iniciarSesion() {
 
     const email = document.getElementById("email").value.trim();

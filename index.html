@@ -168,7 +168,7 @@ async function cargarProductosVisitante() {
   const contenedor = document.getElementById("listaProductosVisitante");
 
   const { data, error } = await supabaseClient
-    .from("products")
+    .from("products") 
     .select("id,name,price,stock,active,image_url")
     .eq("active", true)
     .order("name");
@@ -246,7 +246,27 @@ async function cargarProductosVisitante() {
     `;
   });
 }
-async function iniciarSesion() {
+function calcularTotalVisitante() {
+let total = 0;
+
+document.querySelectorAll(’#listaProductosVisitante input[data-producto-id]’).forEach(input => {
+const cantidad = Number(input.value) || 0;
+const productoId = input.dataset.productoId;
+const producto = (window.productosVisitante || []).find(p => String(p.id) === String(productoId));
+
+if (producto && cantidad > 0) {
+  total += cantidad * Number(producto.price);
+}
+
+});
+
+const totalElemento = document.getElementById(‘totalVisitante’);
+
+if (totalElemento) {
+totalElemento.textContent = ‘$’ + total.toLocaleString(‘es-CO’);
+}
+}
+  async function iniciarSesion() {
 
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;

@@ -101,29 +101,7 @@
     <h1>Cámara de Oficiales</h1>
     <div class="subtitulo">Sistema de Cantina</div>
 
-    <input
-      type="email"
-      id="email"
-      placeholder="Correo electrónico"
-      autocomplete="email"
-    >
-
-    <input
-      type="password"
-      id="password"
-      placeholder="Contraseña"
-      autocomplete="current-password"
-    >
-
-   <button onclick="iniciarSesion()">
-    INGRESAR
-</button>
-
-<button onclick="modoVisitante()" style="background:#2e7d32;">
-    SOY OFICIAL VISITANTE
-</button>
-
-<div id="mensaje"></div>
+    
 
 
     <div class="pie">
@@ -257,67 +235,7 @@ if (totalElemento) {
 totalElemento.textContent = ‘$’ + total.toLocaleString(‘es-CO’);
 }
 }
-  async function iniciarSesion() {
-
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const mensaje = document.getElementById("mensaje");
-
-    mensaje.textContent = "";
-
-    if (!email || !password) {
-      mensaje.textContent = "Ingrese correo y contraseña.";
-      return;
-    }
-
-    mensaje.style.color = "#555";
-    mensaje.textContent = "Verificando...";
-
-    const { data, error } =
-      await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
-
-    if (error) {
-      mensaje.style.color = "#b00020";
-      mensaje.textContent = "Correo o contraseña incorrectos.";
-      return;
-    }
-
-    const { data: officer, error: officerError } =
-      await supabaseClient
-        .from("officers")
-        .select("*")
-        .eq("auth_user_id", data.user.id)
-        .single();
-
-    if (officerError) {
-      mensaje.style.color = "#b00020";
-      mensaje.textContent =
-        "Usuario autenticado, pero no está registrado como oficial.";
-      return;
-    }
-
-    localStorage.setItem(
-      "camara_oficial",
-      JSON.stringify(officer)
-    );
-
-    mensaje.style.color = "#087f23";
-    mensaje.textContent = "Ingreso exitoso.";
-
-    setTimeout(() => {
-
-      if (officer.is_admin) {
-        alert("Bienvenido administrador.");
-        cargarPanelAdministrador();
-      } else {
-        alert("Bienvenido " + officer.full_name);
-      }
-
-    }, 500);
-  }
+  
 
 </script>
 <style>

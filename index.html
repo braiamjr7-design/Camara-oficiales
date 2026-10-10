@@ -697,8 +697,29 @@ async function iniciarSesionNuevo() {
     return;
   }
 
-  mensaje.textContent = "Inicio de sesión correcto.";
-  mensaje.style.color = "green";
+mensaje.textContent = "Inicio de sesión correcto.";
+mensaje.style.color = "green";
+
+const { data: usuario, error: errorOficial } = await supabaseClient
+  .from("officers")
+  .select("*")
+  .eq("auth_user_id", data.user.id)
+  .single();
+
+if (errorOficial || !usuario) {
+  mensaje.textContent = "Sesión iniciada, pero no se encontró el oficial.";
+  mensaje.style.color = "red";
+  return;
+}
+
+localStorage.setItem("camara_oficial", JSON.stringify(usuario));
+
+if (usuario.is_admin === true) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("panelAdmin").style.display = "block";
+} else {
+  mensaje.textContent = "Sesión iniciada. El panel de oficial aún debe configurarse.";
+}
 }
 </script>
 </body>

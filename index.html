@@ -267,6 +267,7 @@ footer { text-align:center;padding:25px;color:var(--muted);font-size:12px; }
 <footer>Cámara de Oficiales</footer>
 
 <script>
+  const SUPABASE_URL = "https://aczhpcwzdpyodmeaqqyw.supabase.co";
 /*
 Primero puedes probar el diseño.
 Los datos de ejemplo solo viven en el navegador.
@@ -441,13 +442,53 @@ $("goStore").addEventListener("click",() => showSection("store"));
 $("search").addEventListener("input",renderCatalog);
 $("category").addEventListener("change",renderCatalog);
 $("payment").addEventListener("change",renderPayment);
-
-$("loginForm").addEventListener("submit",event => {
+$("loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  $("loginMessage").textContent =
-    "El diseño del acceso está listo, pero falta conectar Supabase para validar tu cuenta de administrador.";
-  $("loginMessage").className = "notice error";
-  $("loginMessage").classList.remove("hidden");
+
+  const mensaje = $("loginMessage");
+  const correo = $("email").value.trim();
+  const clave = $("password").value;
+
+  mensaje.className = "notice";
+  mensaje.textContent = "Verificando acceso...";
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: correo,
+      password: clave
+    });
+
+    if (error) throw error;
+
+    const { data: oficial, error: errorOficial } = await supabaseClient
+      .from("officers")
+      .select("*")
+      .eq("auth_user_id", data.user.id)
+      .single();
+
+    if (errorOficial || !oficial) {
+      await supabaseClient.auth.signOut();
+      throw new Error("No se encontró el registro del oficial.");
+    }
+
+    if (oficial.is_admin !== true) {
+      await supabaseClient.auth.signOut();
+      throw new Error("Tu cuenta no tiene permisos de administrador.");
+    }
+
+    admin = true;
+    $("adminIdentity").textContent = oficial.full_name || correo;
+    mensaje.textContent = "Inicio de sesión correcto.";
+    mensaje.className = "notice success";
+
+    renderInventory();
+    showSection("admin");
+  } catch (error) {
+    mensaje.textContent = error.message || "No se pudo iniciar sesión.";
+    mensaje.className = "notice error";
+  }
+
+  mensaje.classList.remove("hidden");
 });
 
 $("logout").addEventListener("click",() => {

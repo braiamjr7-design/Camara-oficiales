@@ -266,8 +266,11 @@ footer { text-align:center;padding:25px;color:var(--muted);font-size:12px; }
 
 <footer>Cámara de Oficiales</footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL = "https://aczhpcwzdpyodmeaqqyw.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_KdRpwNxiSZHwXuOQRXKeZw_rFehbr-p";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /*
 Primero puedes probar el diseño.
 Los datos de ejemplo solo viven en el navegador.

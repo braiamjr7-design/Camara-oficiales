@@ -120,9 +120,161 @@ footer { text-align:center;padding:25px;color:var(--muted);font-size:12px; }
   .product img { height:110px; }
   .product-body { padding:9px;font-size:14px; }
 }
+  /* PANTALLA PRINCIPAL NAVAL */
+.welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 14px;
+  background:
+    linear-gradient(rgba(3, 13, 29, .72), rgba(3, 13, 29, .82)),
+    url("https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1600&q=85")
+    center / cover no-repeat;
+}
+
+.welcome-card {
+  width: 100%;
+  max-width: 820px;
+  padding: 34px;
+  color: #fff;
+  text-align: center;
+  background: rgba(3, 14, 29, .88);
+  border: 1px solid rgba(215, 182, 107, .45);
+  border-radius: 28px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(12px);
+}
+
+.welcome-crest {
+  display: block;
+  width: min(220px, 60%);
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin: 0 auto 20px;
+}
+
+.welcome-card h1 {
+  color: #fff;
+  font-family: Georgia, serif;
+  font-size: clamp(25px, 5vw, 43px);
+  letter-spacing: 2px;
+  margin: 12px 0;
+}
+
+.welcome-card h1 span,
+.welcome-ship {
+  color: #e4bd62;
+}
+
+.welcome-ship {
+  letter-spacing: 5px;
+  margin: 10px 0;
+}
+
+.welcome-subtitle {
+  color: #c6cbd5;
+  letter-spacing: 5px;
+  margin-bottom: 30px;
+}
+
+.welcome-option {
+  margin-top: 22px;
+  padding: 24px;
+  text-align: left;
+  background: rgba(5, 20, 38, .85);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 20px;
+}
+
+.welcome-option h2 {
+  color: #fff;
+  margin-top: 0;
+}
+
+.welcome-option p {
+  color: #b9c3d3;
+  line-height: 1.6;
+}
+
+.welcome-option button {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 12px;
+  font-size: 17px;
+}
+
+.welcome-option .gold {
+  color: #111827;
+  background: linear-gradient(110deg, #d4a33d, #f5d477);
+  border: 1px solid #f5d477;
+  font-weight: bold;
+}
+
+.welcome-option .secondary {
+  color: #f5c451;
+  background: transparent;
+  border: 2px solid #e5b94e;
+}
+
+.welcome-divider {
+  margin: 24px 0;
+  color: #e5b94e;
+  letter-spacing: 8px;
+}
+
+@media (max-width: 600px) {
+  .welcome-card {
+    padding: 22px 16px;
+    border-radius: 20px;
+  }
+
+  .welcome-option {
+    padding: 18px 14px;
+  }
+
+  .welcome-subtitle,
+  .welcome-ship {
+    letter-spacing: 3px;
+  }
+}
 </style>
 </head>
 <body>
+  <section id="welcomeScreen" class="welcome-screen">
+  <div class="welcome-card">
+    <img
+      src="escudo-20-de-julio.png"
+      alt="Escudo ARC 20 de Julio"
+      class="welcome-crest"
+    >
+
+    <h1>CÁMARA DE <span>OFICIALES</span></h1>
+    <p class="welcome-ship">ARC “20 DE JULIO”</p>
+    <p class="welcome-subtitle">CAMOF</p>
+
+    <div class="welcome-option">
+      <h2>⚓ Oficial del buque</h2>
+      <p>Ingrese sus credenciales para acceder.</p>
+      <button type="button" id="welcomeLogin" class="gold">
+        Iniciar sesión
+      </button>
+    </div>
+
+    <div class="welcome-divider">⚓</div>
+
+    <div class="welcome-option">
+      <h2>¿Eres oficial visitante?</h2>
+      <p>Compra tus productos sin necesitar una cuenta del buque.</p>
+      <button type="button" id="welcomeVisitor" class="secondary">
+        Ingresar como visitante →
+      </button>
+    </div>
+  </div>
+</section>
 
 <header>
   <div class="header-inner">
@@ -545,6 +697,25 @@ renderCategories();
 renderCatalog();
 renderPayment();
 renderInventory();
+  // Navegación de la pantalla principal
+$("welcomeLogin").addEventListener("click", () => {
+  $("welcomeScreen").classList.add("hidden");
+  showSection("login");
+});
+
+$("welcomeVisitor").addEventListener("click", () => {
+  $("welcomeScreen").classList.add("hidden");
+  showSection("store");
+});
+
+$("openLogin").addEventListener("click", () => {
+  $("welcomeScreen").classList.add("hidden");
+  showSection("login");
+});
+
+$("backStore").addEventListener("click", () => {
+  showSection("store");
+});
 </script>
 </body>
 </html>

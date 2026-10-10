@@ -128,171 +128,7 @@
   // INICIAR SESIÓN
   // ==========================================
 
-  function modoVisitante() {
-  document.querySelector(".contenedor").style.display = "none";
-  document.getElementById("panelVisitante").style.display = "block";
-  cargarProductosVisitante();
-}
-async function cargarProductosVisitante() {
-  const contenedor = document.getElementById("listaProductosVisitante");
-
-  const { data, error } = await supabaseClient
-    .from("products") 
-    .select("id,name,price,stock,active,image_url")
-    .eq("active", true)
-    .order("name");
-
-  if (error) {
-    contenedor.innerHTML = "Error cargando productos.";
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    contenedor.innerHTML = "No hay productos disponibles.";
-    return;
-  }
-
-  window.productosVisitante = data;
-
-  contenedor.innerHTML = "";
-
-  data.forEach(producto => {
-    let imagenUrl = "";
-
-    if (producto.image_url) {
-      let imagenPath = producto.image_url;
-
-      if (imagenPath.includes("/product-images/")) {
-        imagenPath = imagenPath.split("/product-images/")[1];
-      }
-
-      imagenUrl = supabaseClient
-        .storage
-        .from("product-images")
-        .getPublicUrl(imagenPath)
-        .data
-        .publicUrl;
-    }
-
-    contenedor.innerHTML += `
-      <div style="
-        display:flex;
-        align-items:center;
-        gap:12px;
-        padding:12px;
-        margin:8px 0;
-        background:#f5f7fa;
-        border-radius:12px;
-      ">
-
-        ${
-          imagenUrl
-            ? `<img src="${imagenUrl}" style="width:65px;height:65px;object-fit:contain;border-radius:8px;">`
-            : ""
-        }
-
-        <div style="flex:1;">
-          <strong>${producto.name}</strong>
-          <div>
-            $${Number(producto.price).toLocaleString("es-CO")}
-          </div>
-          <div style="font-size:13px;color:#777;">
-            Stock: ${producto.stock}
-          </div>
-        </div>
-
-        <input
-          type="number"
-          min="0"
-          max="${producto.stock}"
-          value="0"
-          style="width:70px;margin:0;text-align:center;"
-          onchange="calcularTotalVisitante()"
-          data-producto-id="${producto.id}"
-        >
-
-      </div>
-    `;
-  });
-}
-function calcularTotalVisitante() {
-let total = 0;
-
-document.querySelectorAll(’#listaProductosVisitante input[data-producto-id]’).forEach(input => {
-const cantidad = Number(input.value) || 0;
-const productoId = input.dataset.productoId;
-const producto = (window.productosVisitante || []).find(p => String(p.id) === String(productoId));
-
-if (producto && cantidad > 0) {
-  total += cantidad * Number(producto.price);
-}
-
-});
-
-const totalElemento = document.getElementById(‘totalVisitante’);
-
-if (totalElemento) {
-totalElemento.textContent = ‘$’ + total.toLocaleString(‘es-CO’);
-}
-}
-  async function iniciarSesion() {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const mensaje = document.getElementById("mensaje");
-
-  mensaje.textContent = "";
-
-  if (!email || !password) {
-    mensaje.textContent = "Ingrese correo y contraseña.";
-    return;
-  }
-
-  mensaje.style.color = "#555";
-  mensaje.textContent = "Verificando...";
-
-  const { data, error } =
-    await supabaseClient.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
-
-  if (error) {
-    mensaje.style.color = "#b00020";
-    mensaje.textContent = "Correo o contraseña incorrectos.";
-    return;
-  }
-
-  const { data: officer, error: officerError } =
-    await supabaseClient
-      .from("officers")
-      .select("*")
-      .eq("auth_user_id", data.user.id)
-      .single();
-
-  if (officerError) {
-    mensaje.style.color = "#b00020";
-    mensaje.textContent =
-      "Usuario autenticado, pero no está registrado como oficial.";
-    return;
-  }
-
-  localStorage.setItem(
-    "camara_oficial",
-    JSON.stringify(officer)
-  );
-
-  mensaje.style.color = "#087f23";
-  mensaje.textContent = "Ingreso exitoso.";
-
-  setTimeout(() => {
-    if (officer.is_admin) {
-      alert("Bienvenido administrador.");
-      cargarPanelAdministrador();
-    } else {
-      alert("Bienvenido " + officer.full_name);
-    }
-  }, 500);
-}
+  
 
 </script>
 <style>
@@ -818,6 +654,52 @@ async function cerrarSesion() {
 // Revisar si ya existe una sesión activa
 //cargarPanelAdministrador();
 
+</script>
+  <!-- INICIO DE SESIÓN -->
+<div id="inicioSesion" style="max-width:400px;margin:30px auto;padding:25px;border-radius:15px;background:#ffffff;box-shadow:0 4px 15px #0002;color:#17212b;">
+  <h2 style="text-align:center;color:#0b2942;">Cámara de Oficiales</h2>
+  <p style="text-align:center;">Iniciar sesión</p>
+
+  <label for="correoLogin">Correo electrónico</label>
+  <input id="correoLogin" type="email" placeholder="Ingresa tu correo" style="width:100%;padding:12px;margin:8px 0 15px;box-sizing:border-box;">
+
+  <label for="claveLogin">Contraseña</label>
+  <input id="claveLogin" type="password" placeholder="Ingresa tu contraseña" style="width:100%;padding:12px;margin:8px 0 15px;box-sizing:border-box;">
+
+  <button type="button" onclick="iniciarSesionNuevo()" style="width:100%;padding:12px;background:#0b2942;color:white;border:0;border-radius:8px;cursor:pointer;">Iniciar sesión</button>
+
+  <p id="mensajeLogin" style="text-align:center;"></p>
+</div>
+
+<script>
+async function iniciarSesionNuevo() {
+  const correo = document.getElementById("correoLogin").value.trim();
+  const clave = document.getElementById("claveLogin").value;
+  const mensaje = document.getElementById("mensajeLogin");
+
+  if (!correo || !clave) {
+    mensaje.textContent = "Ingresa tu correo y contraseña.";
+    mensaje.style.color = "red";
+    return;
+  }
+
+  mensaje.textContent = "Verificando...";
+  mensaje.style.color = "#555";
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: correo,
+    password: clave
+  });
+
+  if (error) {
+    mensaje.textContent = "Error al iniciar sesión. Verifica tus datos.";
+    mensaje.style.color = "red";
+    return;
+  }
+
+  mensaje.textContent = "Inicio de sesión correcto.";
+  mensaje.style.color = "green";
+}
 </script>
 </body>
 </html>

@@ -689,8 +689,38 @@ $("placeOrder").addEventListener("click",() => {
     return;
   }
 
-  notify("El pedido está preparado, pero no se ha guardado. Debemos conectar Supabase para registrar compras de forma permanente.",true);
-});
+  try {
+  const items = Object.entries(cart).map(([id, quantity]) => {
+    const product = products.find(p => String(p.id) === String(id));
+    if (!product) throw new Error("Producto no encontrado.");
+
+    return {
+      product_id: product.id,
+      product_name: product.name,
+      quantity: Number(quantity),
+      unit_price: Number(product.price)
+    };
+  });
+
+  const total = items.reduce(
+    (sum, item) => sum + item.quantity * item.unit_price, 0
+  );
+
+  const { error } = await supabaseClient
+    .from("orders")
+    .insert([{
+      buyer_name: buyer,
+      payment_method: $("payment").value,
+      total: total,
+      items: items
+    }]);
+
+  if (error) throw error;
+
+  notify("Pedido guardado correctamente.");
+} catch (error) {
+  notify("No se pudo guardar: " + error.message, true);
+}
 
 $("adminIdentity").textContent = "Acceso pendiente de configurar";
 renderCategories();
